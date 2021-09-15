@@ -6,6 +6,7 @@ const routes = require('./controllers');
 const helpers = require('./utils/helpers');
 
 const sequelize = require('./config/connection');
+// const { Server } = require('http');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
 const app = express();
@@ -39,3 +40,9 @@ app.use(routes);
 sequelize.sync({ force: false }).then(() => {
   app.listen(PORT, () => console.log('Now listening'));
 });
+
+// psuedocode
+// create file structure
+// create server.js and connection.js files
+// create models
+// create routes
