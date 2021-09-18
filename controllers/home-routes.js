@@ -1,148 +1,62 @@
 const router = require('express').Router();
-const { Post, User, Comment } = require('../models');
-const withAuth = require('../utils/auth');
+const { Post, Comment, User } = require('../models/');
 
+// get all posts for homepage
 router.get('/', async (req, res) => {
-    try{
-        const allNewPostData = await Post.findAll();
+  try {
+    const postData = await Post.findAll({
+      include: [User],
+    });
 
-        const newPostData = allNewPostData.map((newpost) => newpost.get({ plain: true }));
+    const posts = postData.map((post) => post.get({ plain: true }));
 
-        res.render('homepage', {
-            newPostData,
-            loggedIn: req.session.loggedIn
-        });
-    } catch (err) {
-        res.status(500).json(err);
-    }
+    res.render('all-posts', { posts });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
 
-router.get('/signin', async (req, res) => {
-    try{
-        res.render('signin', {
-            loggedIn: req.session.loggedIn
-        });
-    } catch (err) {
-        res.status(500).json(err);
-    }
-});
-
-router.get('/signup', async (req, res) => {
-    try{
-        res.render('signup', {
-            loggedIn: req.session.loggedIn
-        });
-    } catch (err) {
-        res.status(500).json(err);
-    }
-});
-
-router.get('/dashboard', withAuth, async (req, res) => {
-    const currId = req.session.user_id;
-    try{
-        const postRequestData = await Post.findAll({
-            where: {user_id: currId},
-        });
-
-        const postData = postRequestData.map((poster) => poster.get({ plain: true }));
-        res.render('dashboard',
-         {
-             postData,
-            loggedIn: req.session.loggedIn
-        })
-    } catch (err) {
-        res.status(500).json(err);
-    }
-});
-
-router.get('/new', withAuth, async (req, res) => {
-    try{
-        res.render('new-post');
-    } catch (err){
-        res.status(500).json(err)
-    }
-});
-
-router.get('/:id', withAuth, async (req, res) => {
-    try{
-        const postDataId = await Post.findByPk(req.params.id)
-        const postData = postDataId.get({ plain: true });
-        
-        res.render('post', {
-            postData,
-            loggedIn: req.session.loggedIn,
-        })
-    } catch (err) {
-        res.status(500).json(err);
-    }
-});
-
-router.get('/post/:id', withAuth, async (req, res) => {
-    try{
-        const postDataId = await Post.findByPk(req.params.id, {
-            include: [{
-                model: User,
-                attributes: ['username'],
-            },
-            {
-                model: Comment,
-                include: [User]
-            }]
-        });
-        const postData = postDataId.get({ plain: true });
-        const postId = req.session.user_id;
-        const urlId = req.params.id;
-        const userDataId = await User.findOne({
-            where: {id: postDataId.user_id},
-        });
-
-        const userData = userDataId.get({ plain: true });
-
-        const userDataCommentId = await User.findOne({
-            where: {id: req.session.user_id},
-        });
-
-        const userDataComment = userDataCommentId.get({ plain: true });
-        
-        res.render('single-post', { 
-            userDataComment,
-            userData,
-            postData,
-            postId,
-            urlId,
-            loggedIn: req.session.loggedIn,
-        });
-    } catch (err){
-        res.status(500).json(err);
-    }
-});
-
-router.delete('/:id', withAuth, async (req, res) => {
-    try{
-        const deletePost = await Post.destroy({
-            where: {
-                id:  req.params.id
-              },
-        })
-        res.status(200).json(deletePost);
-    } catch (err) {
-        res.status(500).json(err);
-    }
-});
-
-router.put('/:id', withAuth, async (req, res) => {
-    try{
-        const updatePost = await Post.update({ 
-            content: req.body.postContent,
-        },
+// get single post
+router.get('/post/:id', async (req, res) => {
+  try {
+    const postData = await Post.findByPk(req.params.id, {
+      include: [
+        User,
         {
-            where: {
-                id: req.params.id
-            }
-        })
-        res.status(200).json(updatePost);
-    } catch (err) {
-        res.status(400).json(err);
+          model: Comment,
+          include: [User],
+        },
+      ],
+    });
+
+    if (postData) {
+      const post = postData.get({ plain: true });
+
+      res.render('single-post', { post });
+    } else {
+      res.status(404).end();
     }
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
+
+router.get('/login', (req, res) => {
+  if (req.session.loggedIn) {
+    res.redirect('/');
+    return;
+  }
+
+  res.render('login');
+});
+
+router.get('/signup', (req, res) => {
+  if (req.session.loggedIn) {
+    res.redirect('/');
+    return;
+  }
+
+  res.render('signup');
+});
+
 module.exports = router;

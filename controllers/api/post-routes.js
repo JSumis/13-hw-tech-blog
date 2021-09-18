@@ -1,19 +1,52 @@
 const router = require('express').Router();
-const { Post, User } = require('../../models');
-const withAuth = require('../../utils/auth')
+const { Post } = require('../../models');
+const withAuth = require('../../utils/auth');
 
 router.post('/', withAuth, async (req, res) => {
-    try {
-        const newPost = await Post.create({
-            title: req.body.title,
-            text: req.body.text,
-            date: new Date().toString(),
-            user_id: req.session.user_id
+  const body = req.body;
 
-        });
-        res.status(200).json(newPost);
-    } catch (err) {
-        res.status(400).json(err);
-    }
+  try {
+    const newPost = await Post.create({ ...body, userId: req.session.userId });
+    res.json(newPost);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 });
-module.export = router;
+
+router.put('/:id', withAuth, async (req, res) => {
+  try {
+    const [affectedRows] = await Post.update(req.body, {
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (affectedRows > 0) {
+      res.status(200).end();
+    } else {
+      res.status(404).end();
+    }
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+router.delete('/:id', withAuth, async (req, res) => {
+  try {
+    const [affectedRows] = Post.destroy({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (affectedRows > 0) {
+      res.status(200).end();
+    } else {
+      res.status(404).end();
+    }
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+module.exports = router;
