@@ -24,7 +24,8 @@
   ## Deployment
 
   ### Heroku
-  LINK HERE
+  
+  https://glacial-reef-61098.herokuapp.com/
 
   ## Questions
 
